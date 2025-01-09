@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 # Example worker names and shift data
 schedule_data = {
-    "Name": ["Selix", "Matt", "Christ", "Brian", "Selvi", " ", " ", "Kevin", "Damaris", "Eric", " ", "Moreno", "Karel", "Guaman", " ", " ", "Will", "Era"],
+    "Name": ["Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris", "Eric", "Moreno", "Karel", "Guaman"],
     "Wednesday": [""] * 11,
     "Thursday": [""] * 11,
     "Friday": [""] * 11,
