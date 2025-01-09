@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='logo.png') }}" type="image/png">
+    <title>Schedule</title>
+</head>
+
+<body>
+    <div style="text-align: center;">
+        <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo" style="max-width: 200px; height: auto;">
+    </div>
+    <h1>Work Schedule</h1>
+
+    {% if period_display %}
+        <p><strong>{{ period_display }}</strong></p>
+    {% else %}
+        <p>No period selected yet.</p>
+    {% endif %}
+
+    <!-- Date Picker Form to select the start date -->
+    <form id="dateForm" action="/" method="post">
+        <label for="start_date">Select start date: </label>
+        <input type="date" id="start_date" name="start_date" required 
+            value="{{ start_date or '' }}">
+        <button type="submit">Set Schedule Period</button>
+    </form>
+
+    <!-- Schedule Table -->
+    <form action="/update_schedule" method="post">
+        <table id="scheduleTable">
+            <thead>
+                <tr>
+                    <th style="width: 10%;">Name</th>
+                    <th style="width: 12%;">Wednesday</th>
+                    <th style="width: 12%;">Thursday</th>
+                    <th style="width: 12%;">Friday</th>
+                    <th style="width: 12%;">Saturday</th>
+                    <th style="width: 12%;">Sunday</th>
+                    <th style="width: 12%;">Monday</th>
+                    <th style="width: 12%;">Tuesday</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for name, wed, thu, fri, sat, sun, mon, tue in schedule_list %}
+                <tr>
+                    <td>{{ name }}</td>
+
+                    <!-- Wednesday -->
+                    <td>
+                        <input type="checkbox" name="Lunch_Wednesday_{{ name }}" {% if 'Lunch' in wed %} checked {% endif %}> Lunch
+                        <br>
+                        <select name="Other_Shifts_Wednesday_{{ name }}">
+                            <option value="" {% if wed == '' or 'N/A' in wed %} selected {% endif %}></option>
+                            <option value="Dinner" {% if 'Dinner' in wed %} selected {% endif %}>Dinner</option>
+                            <option value="Runner" {% if 'Runner' in wed %} selected {% endif %}>Runner</option>
+                            <option value="BB" {% if 'BB' in wed %} selected {% endif %}>BB</option>
+                            <option value="Host" {% if 'Host' in wed %} selected {% endif %}>Host</option>
+                            <option value="Packer" {% if 'Packer' in wed %} selected {% endif %}>Packer</option>
+                            <option value="On Call" {% if 'On Call' in wed %} selected {% endif %}>On Call</option>
+                        </select>
+                    </td>
+
+                    <!-- Thursday -->
+                    <td>
+                        <input type="checkbox" name="Lunch_Thursday_{{ name }}" {% if 'Lunch' in thu %} checked {% endif %}> Lunch
+                        <br>
+                        <select name="Other_Shifts_Thursday_{{ name }}">
+                            <option value="" {% if thu == '' or 'N/A' in thu %} selected {% endif %}></option>
+                            <option value="Dinner" {% if 'Dinner' in thu %} selected {% endif %}>Dinner</option>
+                            <option value="Runner" {% if 'Runner' in thu %} selected {% endif %}>Runner</option>
+                            <option value="BB" {% if 'BB' in thu %} selected {% endif %}>BB</option>
+                            <option value="Host" {% if 'Host' in thu %} selected {% endif %}>Host</option>
+                            <option value="Packer" {% if 'Packer' in thu %} selected {% endif %}>Packer</option>
+                            <option value="On Call" {% if 'On Call' in thu %} selected {% endif %}>On Call</option>
+                        </select>
+                    </td>
+
+                    <!-- Friday -->
+                    <td>
+                        <input type="checkbox" name="Lunch_Friday_{{ name }}" {% if 'Lunch' in fri %} checked {% endif %}> Lunch
+                        <br>
+                        <select name="Other_Shifts_Friday_{{ name }}">
+                            <option value="" {% if fri == '' or 'N/A' in fri %} selected {% endif %}></option>
+                            <option value="Dinner" {% if 'Dinner' in fri %} selected {% endif %}>Dinner</option>
+                            <option value="Runner" {% if 'Runner' in fri %} selected {% endif %}>Runner</option>
+                            <option value="BB" {% if 'BB' in fri %} selected {% endif %}>BB</option>
+                            <option value="Host" {% if 'Host' in fri %} selected {% endif %}>Host</option>
+                            <option value="Packer" {% if 'Packer' in fri %} selected {% endif %}>Packer</option>
+                            <option value="On Call" {% if 'On Call' in fri %} selected {% endif %}>On Call</option>
+                        </select>
+                    </td>
+
+                    <!-- Saturday -->
+                    <td>
+                        <input type="checkbox" name="Lunch_Saturday_{{ name }}" {% if 'Lunch' in sat %} checked {% endif %}> Lunch
+                        <br>
+                        <select name="Other_Shifts_Saturday_{{ name }}">
+                            <option value="" {% if sat == '' or 'N/A' in sat %} selected {% endif %}></option>
+                            <option value="Dinner" {% if 'Dinner' in sat %} selected {% endif %}>Dinner</option>
+                            <option value="Runner" {% if 'Runner' in sat %} selected {% endif %}>Runner</option>
+                            <option value="BB" {% if 'BB' in sat %} selected {% endif %}>BB</option>
+                            <option value="Host" {% if 'Host' in sat %} selected {% endif %}>Host</option>
+                            <option value="Packer" {% if 'Packer' in sat %} selected {% endif %}>Packer</option>
+                            <option value="On Call" {% if 'On Call' in sat %} selected {% endif %}>On Call</option>
+                        </select>
+                    </td>
+
+                    <!-- Sunday -->
+                    <td>
+                        <input type="checkbox" name="Lunch_Sunday_{{ name }}" {% if 'Lunch' in sun %} checked {% endif %}> Lunch
+                        <br>
+                        <select name="Other_Shifts_Sunday_{{ name }}">
+                            <option value="" {% if sun == '' or 'N/A' in sun %} selected {% endif %}></option>
+                            <option value="Dinner" {% if 'Dinner' in sun %} selected {% endif %}>Dinner</option>
+                            <option value="Runner" {% if 'Runner' in sun %} selected {% endif %}>Runner</option>
+                            <option value="BB" {% if 'BB' in sun %} selected {% endif %}>BB</option>
+                            <option value="Host" {% if 'Host' in sun %} selected {% endif %}>Host</option>
+                            <option value="Packer" {% if 'Packer' in sun %} selected {% endif %}>Packer</option>
+                            <option value="On Call" {% if 'On Call' in sun %} selected {% endif %}>On Call</option>
+                        </select>
+                    </td>
+
+                    <!-- Monday -->
+                    <td>
+                        <input type="checkbox" name="Lunch_Monday_{{ name }}" {% if 'Lunch' in mon %} checked {% endif %}> Lunch
+                        <br>
+                        <select name="Other_Shifts_Monday_{{ name }}">
+                            <option value="" {% if mon == '' or 'N/A' in mon %} selected {% endif %}></option>
+                            <option value="Dinner" {% if 'Dinner' in mon %} selected {% endif %}>Dinner</option>
+                            <option value="Runner" {% if 'Runner' in mon %} selected {% endif %}>Runner</option>
+                            <option value="BB" {% if 'BB' in mon %} selected {% endif %}>BB</option>
+                            <option value="Host" {% if 'Host' in mon %} selected {% endif %}>Host</option>
+                            <option value="Packer" {% if 'Packer' in mon %} selected {% endif %}>Packer</option>
+                            <option value="On Call" {% if 'On Call' in mon %} selected {% endif %}>On Call</option>
+                        </select>
+                    </td>
+
+                    <!-- Tuesday -->
+                    <td>
+                        <input type="checkbox" name="Lunch_Tuesday_{{ name }}" {% if 'Lunch' in tue %} checked {% endif %}> Lunch
+                        <br>
+                        <select name="Other_Shifts_Tuesday_{{ name }}">
+                            <option value="" {% if tue == '' or 'N/A' in tue %} selected {% endif %}></option>
+                            <option value="Dinner" {% if 'Dinner' in tue %} selected {% endif %}>Dinner</option>
+                            <option value="Runner" {% if 'Runner' in tue %} selected {% endif %}>Runner</option>
+                            <option value="BB" {% if 'BB' in tue %} selected {% endif %}>BB</option>
+                            <option value="Host" {% if 'Host' in tue %} selected {% endif %}>Host</option>
+                            <option value="Packer" {% if 'Packer' in tue %} selected {% endif %}>Packer</option>
+                            <option value="On Call" {% if 'On Call' in tue %} selected {% endif %}>On Call</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="button-container">
+            <button type="submit">Update Schedule</button>
+            <button id="downloadPdfButton">Download PDF</button>
+        </div>
+    </form>
+
+        <!-- Download Excel and PDF Buttons -->
+        <!-- <button id="downloadExcelButton">Download Excel</button> -->
+
+    <br><br>
+
+    <!-- Clear Schedule Button -->
+    <form action="/clear_schedule" method="post" id="clearScheduleForm">
+        <div class="centered-button-container">
+            <button type="button" onclick="confirmClear()">Clear Schedule</button>
+        </div>
+    </form>
+    
+
+    <!-- <script>
+        document.getElementById("downloadExcelButton").addEventListener("click", function() {
+            // Trigger the Excel file download
+            window.location.href = "/download_excel";
+        });
+    </script> -->
+
+    <script type="text/javascript">
+        function confirmClear() {
+            var confirmation = confirm("Are you sure you want to clear the schedule?");
+            if (confirmation) {
+                // If confirmed, submit the form
+                document.getElementById("clearScheduleForm").submit();
+            }
+        }
+    </script>
+
+    <script>
+        document.getElementById("downloadPdfButton").addEventListener("click", function() {
+        // Capture the table data
+        const table = document.getElementById("scheduleTable");
+        const data = [];
+
+        for (let i = 0; i < table.rows.length; i++) {
+            const row = table.rows[i];
+            const rowData = [];
+            const cells = row.cells;
+
+            // Iterate through each column in the row (Name, days of the week)
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j].querySelector('select')) {
+                    // Capture the selected value from the dropdowns
+                    const selectedOption = cells[j].querySelector('select').value;
+                    rowData.push(selectedOption);
+                } else if (cells[j].querySelector('input[type="checkbox"]')) {
+                    // Capture the checkbox state (true if checked, false if not)
+                    const checkboxChecked = cells[j].querySelector('input[type="checkbox"]').checked;
+                    rowData.push(checkboxChecked ? 'Lunch' : ''); // Add 'Lunch' if checked
+                } else {
+                    // For name, just copy the content
+                    rowData.push(cells[j].innerText.trim());
+                }
+            }
+            data.push(rowData);
+        }
+
+        // Send the data to Flask for PDF generation
+        fetch('/download_pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ schedule_data: data })
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            // Create a download link and trigger the download
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = "schedule.pdf";
+            link.click();
+        })
+        .catch(error => console.error('Error generating PDF:', error));
+    });
+</script>
+</body>
+</html>
