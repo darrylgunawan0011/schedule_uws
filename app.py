@@ -28,39 +28,38 @@ start_date = None
 def index():
     global start_date
 
-    # Handle setting the start date via the form or URL
+    # Handle setting the start date via the form (POST request)
     if request.method == 'POST':
         start_date = request.form.get('start_date')  # Get the selected start date from form
+    
+    # If no start date has been set, default to the next Wednesday
+    if not start_date:
+        today = datetime.today()
+        # Calculate days to the next Wednesday
+        days_to_next_wednesday = (3 - today.weekday() + 7) % 7  # 3 is Wednesday (Monday=0, Sunday=6)
+        
+        # If today is already Wednesday, set the start date to the next Wednesday (skip today)
+        if days_to_next_wednesday == 0:
+            days_to_next_wednesday = 7
+        
+        next_wednesday = today + timedelta(days=days_to_next_wednesday)
+        start_date = next_wednesday.strftime("%Y-%m-%d")  # Set to next Wednesday (or today if it's Wednesday)
+    
+    # Calculate the dates for each day of the schedule based on the start date
+    start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
+    dates = [start_date_obj + timedelta(days=i) for i in range(7)]
+    week_dates = {
+        'wednesday': dates[0],
+        'thursday': dates[1],
+        'friday': dates[2],
+        'saturday': dates[3],
+        'sunday': dates[4],
+        'monday': dates[5],
+        'tuesday': dates[6]
+    }
 
-    # Calculate the dates for each day of the schedule
-    if start_date:
-        start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
-        dates = [start_date_obj + timedelta(days=i) for i in range(7)]
-        week_dates = {
-            'wednesday': dates[0],
-            'thursday': dates[1],
-            'friday': dates[2],
-            'saturday': dates[3],
-            'sunday': dates[4],
-            'monday': dates[5],
-            'tuesday': dates[6]
-        }
-
-        # Display the selected period
-        period_display = f"Selected Period: {week_dates['wednesday'].strftime('%B %d, %Y')} to {week_dates['tuesday'].strftime('%B %d, %Y')}"
-    else:
-        # Default to current week if no start date is set
-        week_dates = {
-            'wednesday': datetime.now() + timedelta(days=(2 - datetime.now().weekday())),
-            'thursday': datetime.now() + timedelta(days=(3 - datetime.now().weekday())),
-            'friday': datetime.now() + timedelta(days=(4 - datetime.now().weekday())),
-            'saturday': datetime.now() + timedelta(days=(5 - datetime.now().weekday())),
-            'sunday': datetime.now() + timedelta(days=(6 - datetime.now().weekday())),
-            'monday': datetime.now() + timedelta(days=(7 - datetime.now().weekday())),
-            'tuesday': datetime.now() + timedelta(days=(1 - datetime.now().weekday()))
-        }
-
-        period_display = "No period selected yet."
+    # Display the selected period
+    period_display = f"Selected Period: {week_dates['wednesday'].strftime('%B %d, %Y')} to {week_dates['tuesday'].strftime('%B %d, %Y')}"
 
     schedule_list = zip(schedule_data['Name'], schedule_data['Wednesday'], schedule_data['Thursday'], schedule_data['Friday'], 
                         schedule_data['Saturday'], schedule_data['Sunday'], schedule_data['Monday'], schedule_data['Tuesday'])
@@ -74,7 +73,8 @@ def index():
                            sunday_date=week_dates['sunday'].strftime('%m/%d'),
                            monday_date=week_dates['monday'].strftime('%m/%d'),
                            tuesday_date=week_dates['tuesday'].strftime('%m/%d'),
-                           period_display=period_display)
+                           period_display=period_display,
+                           start_date=start_date)
 
 @app.route('/set_schedule_period', methods=['POST', 'GET'])
 def set_schedule_period():
