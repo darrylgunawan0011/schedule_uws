@@ -14,12 +14,23 @@ app = Flask(__name__)
 SCHEDULE_FILE = "schedule_data.json"
 
 def load_schedule():
-    global schedule_data
+    global schedule_data, start_date
     try:
         with open(SCHEDULE_FILE, 'r') as f:
-            schedule_data = json.load(f)
+            data = json.load(f)
+            schedule_data = data.get("schedule_data", {
+                "Name": ["Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris", "Eric", "Moreno", "Karel", "Guaman", "Will", "Era"],
+                "Wednesday": [""] * 13,
+                "Thursday": [""] * 13,
+                "Friday": [""] * 13,
+                "Saturday": [""] * 13,
+                "Sunday": [""] * 13,
+                "Monday": [""] * 13,
+                "Tuesday": [""] * 13,
+            })
+            start_date = data.get("start_date")  # Load the start date if present
     except (FileNotFoundError, json.JSONDecodeError):
-        # If the file doesn't exist or is corrupted, use default data
+        # If the file doesn't exist or is corrupted, use defaults
         schedule_data = {
             "Name": ["Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris", "Eric", "Moreno", "Karel", "Guaman", "Will", "Era"],
             "Wednesday": [""] * 13,
