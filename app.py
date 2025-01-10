@@ -33,9 +33,10 @@ def load_schedule():
 
 def save_schedule():
     with open(SCHEDULE_FILE, 'w') as f:
-        json.dump(schedule_data, f)
-
-load_schedule()
+        json.dump({
+            "schedule_data": schedule_data,
+            "start_date": start_date
+        }, f)
 
 start_date = None
 
@@ -99,6 +100,7 @@ def set_schedule_period():
     else:
         start_date = request.args.get('start_date')
 
+    save_schedule()  # Save the updated start date
     return redirect('/')
 
 @app.route('/update_schedule', methods=['POST'])
@@ -267,4 +269,5 @@ def download_pdf():
     return response
 
 if __name__ == "__main__":
+    load_schedule()
     app.run(host='0.0.0.0', port=8181)
