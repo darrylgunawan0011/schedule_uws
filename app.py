@@ -6,21 +6,36 @@ from flask import Flask, render_template, request, redirect, send_file, make_res
 import os
 import pandas as pd
 import io
+import json
 from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
-# Example worker names and shift data
-schedule_data = {
-    "Name": ["Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris", "Eric", "Moreno", "Karel", "Guaman", "Will", "Era"],
-    "Wednesday": [""] * 13,
-    "Thursday": [""] * 13,
-    "Friday": [""] * 13,
-    "Saturday": [""] * 13,
-    "Sunday": [""] * 13,
-    "Monday": [""] * 13,
-    "Tuesday": [""] * 13,
-}
+SCHEDULE_FILE = "schedule_data.json"
+
+def load_schedule():
+    global schedule_data
+    try:
+        with open(SCHEDULE_FILE, 'r') as f:
+            schedule_data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        # If the file doesn't exist or is corrupted, use default data
+        schedule_data = {
+            "Name": ["Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris", "Eric", "Moreno", "Karel", "Guaman", "Will", "Era"],
+            "Wednesday": [""] * 13,
+            "Thursday": [""] * 13,
+            "Friday": [""] * 13,
+            "Saturday": [""] * 13,
+            "Sunday": [""] * 13,
+            "Monday": [""] * 13,
+            "Tuesday": [""] * 13,
+        }
+
+def save_schedule():
+    with open(SCHEDULE_FILE, 'w') as f:
+        json.dump(schedule_data, f)
+
+load_schedule()
 
 start_date = None
 
@@ -89,6 +104,8 @@ def set_schedule_period():
 @app.route('/update_schedule', methods=['POST'])
 def update_schedule():
     global schedule_data
+
+    # Iterate through the days and update the schedule data
     for day in ['Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday']:
         for idx, name in enumerate(schedule_data['Name']):
             # Get the checkbox status for Lunch (if checked, it adds 'Lunch')
@@ -97,20 +114,23 @@ def update_schedule():
             # Get the selected other shift for the day (dropdown selection)
             other_shift = request.form.get(f"Other_Shifts_{day}_{name}", "N/A")  # Default to "N/A" if nothing selected
 
-            # If Lunch is checked, we combine Lunch with the dropdown shift (if selected) with a space in between
+            # If Lunch is checked, combine Lunch with the dropdown shift (if selected)
             if lunch_checkbox:
                 if other_shift != "N/A":
-                    # If a dropdown value is selected, combine Lunch and that value with a space
+                    # Combine Lunch and dropdown value
                     schedule_data[day][idx] = f"Lunch {other_shift}"
                 else:
                     # Only "Lunch" if no dropdown value is selected
                     schedule_data[day][idx] = "Lunch"
             else:
-                # If Lunch is not checked, only use the selected dropdown value (or empty if none selected)
+                # If Lunch is not checked, use only the selected dropdown value (or empty if none selected)
                 if other_shift != "N/A":
                     schedule_data[day][idx] = other_shift
                 else:
                     schedule_data[day][idx] = ""  # Empty if nothing is selected
+
+    # Save the updated schedule to a JSON file
+    save_schedule()
 
     return redirect('/')
 
@@ -120,6 +140,8 @@ def clear_schedule():
     for day in schedule_data:
         if day != 'Name':  # Skip the 'Name' column
             schedule_data[day] = [''] * len(schedule_data['Name'])
+    
+    save_schedule()  # Save the cleared schedule to the file
     return redirect('/')
 
 @app.route('/download_excel', methods=['GET'])
