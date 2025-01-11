@@ -34,16 +34,16 @@ def generate_empty_schedule():
     """Generate an empty schedule structure."""
     return {
         "Name": [
-            "Sally", "Mihiro", "Darryl", "Minerva", "Edwin", "Shawn",
-            "Kenneth", "Dewi", "Stephanie", "Fuyuka", "Regine"
+            "Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris"
+            "Eric", "Moreno", "Karel", "Guaman", "Will", "Era"
         ],
-        "Wednesday": [""] * 11,
-        "Thursday": [""] * 11,
-        "Friday": [""] * 11,
-        "Saturday": [""] * 11,
-        "Sunday": [""] * 11,
-        "Monday": [""] * 11,
-        "Tuesday": [""] * 11
+        "Wednesday": [""] * 13,
+        "Thursday": [""] * 13,
+        "Friday": [""] * 13,
+        "Saturday": [""] * 13,
+        "Sunday": [""] * 13,
+        "Monday": [""] * 13,
+        "Tuesday": [""] * 13
     }
 
 @app.route('/', methods=['GET', 'POST'])
