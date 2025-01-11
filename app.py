@@ -63,12 +63,13 @@ def index():
 
         start_date = user_date
     else:
-        # Default to the next Wednesday if no date is provided
         today = datetime.today()
-        days_to_next_wednesday = (3 - today.weekday() + 7) % 7  # 3 is Wednesday
-        if days_to_next_wednesday == 0:
-            days_to_next_wednesday = 7
-        next_wednesday = today + timedelta(days=days_to_next_wednesday)
+        if today.weekday() == 2:  # If today is Wednesday
+            next_wednesday = today + timedelta(days=7)
+        else:
+            days_to_next_wednesday = (2 - today.weekday() + 7) % 7  # 2 is Wednesday
+            next_wednesday = today + timedelta(days=days_to_next_wednesday)
+
         start_date = next_wednesday.strftime("%Y-%m-%d")
 
     # Load the schedule data from the JSON file
