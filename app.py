@@ -34,7 +34,7 @@ def generate_empty_schedule():
     """Generate an empty schedule structure."""
     return {
         "Name": [
-            "Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris"
+            "Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris",
             "Eric", "Moreno", "Karel", "Guaman", "Will", "Era"
         ],
         "Wednesday": [""] * 13,
