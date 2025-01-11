@@ -142,6 +142,44 @@ def update_schedule():
 
     return redirect(f'/?start_date={start_date}')
 
+@app.route('/copy_schedule', methods=['POST'])
+def copy_schedule():
+    global schedule_data, start_date
+
+    # Get the target date from the form submission
+    copy_date = request.form.get('copy_date')
+
+    # Check if the target date is valid and is a Wednesday
+    try:
+        copy_date_obj = datetime.strptime(copy_date, "%Y-%m-%d")
+        if copy_date_obj.weekday() != 2:  # Ensure it's a Wednesday
+            return render_template(
+                'index.html',
+                error_message="Please select a Wednesday as the target date for the schedule."
+            )
+    except ValueError:
+        return render_template(
+            'index.html',
+            error_message="Invalid date format. Please select a valid date."
+        )
+
+    # Load the current schedule data from the selected start date
+    all_schedules = load_schedule_data()
+
+    # Check if the target date already has a schedule, if not, create an empty schedule
+    if copy_date not in all_schedules:
+        print(f"Target date '{copy_date}' not found. Creating new schedule.")
+        all_schedules[copy_date] = {"schedule_data": generate_empty_schedule()}
+
+    # Copy the schedule from the current period to the selected target period
+    all_schedules[copy_date]["schedule_data"] = schedule_data
+
+    # Save the updated schedules back to the JSON file
+    save_schedule_data(all_schedules)
+
+    # Redirect to the copied schedule's page
+    return redirect(f'/?start_date={copy_date}')
+    
 @app.route('/clear_schedule', methods=['POST'])
 def clear_schedule():
     global schedule_data, start_date
