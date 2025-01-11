@@ -12,6 +12,11 @@
     <div style="text-align: center;">
         <img src="{{ url_for('static', filename='logo.jpg') }}" alt="Logo" style="max-width: 200px; height: auto;">
     </div>
+        {% if error_message %}
+        <div style="color: red; font-weight: bold;">
+            {{ error_message }}
+        </div>
+    {% endif %}
     <h1>SAPPS UWS Schedule</h1>
 
     {% if period_display %}
