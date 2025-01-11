@@ -173,6 +173,11 @@
             <button id="downloadPdfButton">Download PDF</button>
         </div>
     </form>
+    <form action="/copy_schedule" method="POST">
+        <label for="copy_date">Select the date to copy the schedule to:</label>
+        <input type="date" id="copy_date" name="copy_date" required>
+        <button type="submit">Copy Schedule</button>
+    </form>
 
         <!-- Download Excel and PDF Buttons -->
         <!-- <button id="downloadExcelButton">Download Excel</button> -->
