@@ -1,78 +1,90 @@
-from openpyxl import load_workbook
+from flask import Flask, render_template, request, redirect, send_file, make_response
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.lib import colors
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-from flask import Flask, render_template, request, redirect, send_file, make_response, session
-import os
+from openpyxl import load_workbook
+from datetime import datetime, timedelta
 import pandas as pd
 import io
 import json
-from datetime import datetime, timedelta
+import os
 
 app = Flask(__name__)
 
 SCHEDULE_FILE = "schedule_data.json"
-
-def load_schedule():
-    global schedule_data, start_date
-    try:
-        with open(SCHEDULE_FILE, 'r') as f:
-            data = json.load(f)
-            schedule_data = data.get("schedule_data", {
-                "Name": ["Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris", "Eric", "Moreno", "Karel", "Guaman", "Will", "Era"],
-                "Wednesday": [""] * 13,
-                "Thursday": [""] * 13,
-                "Friday": [""] * 13,
-                "Saturday": [""] * 13,
-                "Sunday": [""] * 13,
-                "Monday": [""] * 13,
-                "Tuesday": [""] * 13,
-            })
-            start_date = data.get("start_date")  # Load the start date if present
-    except (FileNotFoundError, json.JSONDecodeError):
-        # If the file doesn't exist or is corrupted, use defaults
-        schedule_data = {
-            "Name": ["Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris", "Eric", "Moreno", "Karel", "Guaman", "Will", "Era"],
-            "Wednesday": [""] * 13,
-            "Thursday": [""] * 13,
-            "Friday": [""] * 13,
-            "Saturday": [""] * 13,
-            "Sunday": [""] * 13,
-            "Monday": [""] * 13,
-            "Tuesday": [""] * 13,
-        }
-
-def save_schedule():
-    with open(SCHEDULE_FILE, 'w') as f:
-        json.dump({
-            "schedule_data": schedule_data,
-            "start_date": start_date
-        }, f)
-
+schedule_data = {}
 start_date = None
 
+def load_schedule_data():
+    """Load schedule data from JSON file."""
+    if os.path.exists(SCHEDULE_FILE):
+        try:
+            with open(SCHEDULE_FILE, 'r') as file:
+                return json.load(file)
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+def save_schedule_data(data):
+    """Save schedule data to JSON file."""
+    with open(SCHEDULE_FILE, 'w') as file:
+        json.dump(data, file, indent=4)
+
+def generate_empty_schedule():
+    """Generate an empty schedule structure."""
+    return {
+        "Name": [
+            "Selix", "Matt", "Christ", "Brian", "Selvi", "Kevin", "Damaris", 
+            "Eric", "Moreno", "Karel", "Guaman", "Will", "Era"
+        ],
+        "Wednesday": [""] * 13,
+        "Thursday": [""] * 13,
+        "Friday": [""] * 13,
+        "Saturday": [""] * 13,
+        "Sunday": [""] * 13,
+        "Monday": [""] * 13,
+        "Tuesday": [""] * 13
+    }
+    
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    global start_date
+    global start_date, schedule_data
 
-    # Handle setting the start date via the form (POST request)
-    if request.method == 'POST':
-        start_date = request.form.get('start_date')  # Get the selected start date from form
-    
-    # If no start date has been set, default to the next Wednesday
-    if not start_date:
+    if request.method == 'POST' or request.args.get('start_date'):
+        user_date = request.args.get('start_date') or request.form.get('start_date')
+        user_date_obj = datetime.strptime(user_date, "%Y-%m-%d")
+
+        # Check if the selected date is a Wednesday
+        if user_date_obj.weekday() != 2:  # 2 is Wednesday
+            return render_template(
+                'index.html',
+                error_message="Please select a Wednesday as the starting date for the schedule."
+            )
+
+        start_date = user_date
+    else:
+        # Default to the next Wednesday if no date is provided
         today = datetime.today()
-        # Calculate days to the next Wednesday
-        days_to_next_wednesday = (3 - today.weekday() + 7) % 7  # 3 is Wednesday (Monday=0, Sunday=6)
-        
-        # If today is already Wednesday, set the start date to the next Wednesday (skip today)
+        days_to_next_wednesday = (3 - today.weekday() + 7) % 7  # 3 is Wednesday
         if days_to_next_wednesday == 0:
             days_to_next_wednesday = 7
-        
         next_wednesday = today + timedelta(days=days_to_next_wednesday)
-        start_date = next_wednesday.strftime("%Y-%m-%d")  # Set to next Wednesday (or today if it's Wednesday)
-    
-    # Calculate the dates for each day of the schedule based on the start date
+        start_date = next_wednesday.strftime("%Y-%m-%d")
+
+    # Load the schedule data from the JSON file
+    all_schedules = load_schedule_data()
+
+    # Check if the selected period exists in the JSON data
+    if start_date not in all_schedules:
+        print(f"Start date '{start_date}' not found. Creating new schedule.")
+        all_schedules[start_date] = {"schedule_data": generate_empty_schedule()}
+        save_schedule_data(all_schedules)  # Save the new schedule
+    else:
+        print(f"Start date '{start_date}' found. Loading schedule.")
+
+    schedule_data = all_schedules[start_date]["schedule_data"]
+
+    # Calculate the dates for the selected period
     start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
     dates = [start_date_obj + timedelta(days=i) for i in range(7)]
     week_dates = {
@@ -85,14 +97,20 @@ def index():
         'tuesday': dates[6]
     }
 
-    # Display the selected period
     period_display = f"Selected Period: {week_dates['wednesday'].strftime('%B %d, %Y')} to {week_dates['tuesday'].strftime('%B %d, %Y')}"
+    schedule_list = zip(
+        schedule_data["Name"],
+        schedule_data["Wednesday"],
+        schedule_data["Thursday"],
+        schedule_data["Friday"],
+        schedule_data["Saturday"],
+        schedule_data["Sunday"],
+        schedule_data["Monday"],
+        schedule_data["Tuesday"]
+    )
 
-    schedule_list = zip(schedule_data['Name'], schedule_data['Wednesday'], schedule_data['Thursday'], schedule_data['Friday'], 
-                        schedule_data['Saturday'], schedule_data['Sunday'], schedule_data['Monday'], schedule_data['Tuesday'])
-
-    # Pass the week dates and period display to the template
-    return render_template('index.html', schedule_list=schedule_list, 
+    return render_template('index.html',
+                           schedule_list=schedule_list,
                            wednesday_date=week_dates['wednesday'].strftime('%m/%d'),
                            thursday_date=week_dates['thursday'].strftime('%m/%d'),
                            friday_date=week_dates['friday'].strftime('%m/%d'),
@@ -101,112 +119,52 @@ def index():
                            monday_date=week_dates['monday'].strftime('%m/%d'),
                            tuesday_date=week_dates['tuesday'].strftime('%m/%d'),
                            period_display=period_display,
-                           start_date=start_date)
-
-@app.route('/set_schedule_period', methods=['POST', 'GET'])
-def set_schedule_period():
-    global start_date
-    if request.method == 'POST':
-        start_date = request.form['start_date']
-    else:
-        start_date = request.args.get('start_date')
-
-    save_schedule()  # Save the updated start date
-    return redirect('/')
+                           start_date=start_date,
+                           error_message=None)
 
 @app.route('/update_schedule', methods=['POST'])
 def update_schedule():
-    global schedule_data
+    global schedule_data, start_date
 
-    # Iterate through the days and update the schedule data
-    for day in ['Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday', 'Monday', 'Tuesday']:
-        for idx, name in enumerate(schedule_data['Name']):
-            # Get the checkbox status for Lunch (if checked, it adds 'Lunch')
+    for day in ["Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday"]:
+        for idx, name in enumerate(schedule_data["Name"]):
             lunch_checkbox = request.form.get(f"Lunch_{day}_{name}")
+            other_shift = request.form.get(f"Other_Shifts_{day}_{name}", "N/A")
 
-            # Get the selected other shift for the day (dropdown selection)
-            other_shift = request.form.get(f"Other_Shifts_{day}_{name}", "N/A")  # Default to "N/A" if nothing selected
-
-            # If Lunch is checked, combine Lunch with the dropdown shift (if selected)
             if lunch_checkbox:
-                if other_shift != "N/A":
-                    # Combine Lunch and dropdown value
-                    schedule_data[day][idx] = f"Lunch {other_shift}"
-                else:
-                    # Only "Lunch" if no dropdown value is selected
-                    schedule_data[day][idx] = "Lunch"
+                schedule_data[day][idx] = f"Lunch {other_shift}" if other_shift != "N/A" else "Lunch"
             else:
-                # If Lunch is not checked, use only the selected dropdown value (or empty if none selected)
-                if other_shift != "N/A":
-                    schedule_data[day][idx] = other_shift
-                else:
-                    schedule_data[day][idx] = ""  # Empty if nothing is selected
+                schedule_data[day][idx] = other_shift if other_shift != "N/A" else ""
 
-    # Save the updated schedule to a JSON file
-    save_schedule()
+    all_schedules = load_schedule_data()
+    all_schedules[start_date] = {"schedule_data": schedule_data}
+    save_schedule_data(all_schedules)
 
-    return redirect('/')
+    return redirect(f'/?start_date={start_date}')
 
 @app.route('/clear_schedule', methods=['POST'])
 def clear_schedule():
-    global schedule_data
-    for day in schedule_data:
-        if day != 'Name':  # Skip the 'Name' column
-            schedule_data[day] = [''] * len(schedule_data['Name'])
-    
-    save_schedule()  # Save the cleared schedule to the file
-    return redirect('/')
+    global schedule_data, start_date
+
+    for day in ["Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday"]:
+        schedule_data[day] = [""] * len(schedule_data["Name"])
+
+    all_schedules = load_schedule_data()
+    all_schedules[start_date] = {"schedule_data": schedule_data}
+    save_schedule_data(all_schedules)
+
+    return redirect(f'/?start_date={start_date}')
 
 @app.route('/download_excel', methods=['GET'])
 def download_excel():
-    # Convert the schedule data into a DataFrame
     df = pd.DataFrame(schedule_data)
-
-    # Save the DataFrame to an Excel file
     excel_file = "worker_schedule.xlsx"
     df.to_excel(excel_file, index=False)
-
-    # Send the Excel file as a downloadable file
     return send_file(excel_file, as_attachment=True, download_name="worker_schedule.xlsx")
-
-def convert_excel_to_pdf(excel_file):
-    # Load the Excel file
-    wb = load_workbook(excel_file)
-    sheet = wb.active
-    
-    # Extract data from the sheet
-    data = []
-    for row in sheet.iter_rows(values_only=True):
-        data.append(list(row))
-    
-    # Create the PDF
-    pdf_file = "worker_schedule.pdf"
-    document = SimpleDocTemplate(pdf_file, pagesize=letter)
-
-    table = Table(data)
-
-    # Set table style
-    table.setStyle(TableStyle([ 
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, -1), 10),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-    ]))
-
-    # Build the PDF
-    elements = [table]
-    document.build(elements)
-    
-    # Return the generated PDF for download
-    return pdf_file
 
 @app.route('/download_pdf', methods=['POST'])
 def download_pdf():
-    global start_date
+    global schedule_data, start_date
     start_date_obj = datetime.strptime(start_date, "%Y-%m-%d")
     week_dates = [start_date_obj + timedelta(days=i) for i in range(7)]
 
@@ -222,11 +180,12 @@ def download_pdf():
               f"Tue ({week_dates[6].strftime('%m/%d')})"]
     data.append(header)
 
+    # Populate rows with names and corresponding data
     for idx, name in enumerate(schedule_data['Name']):
         row = [name]
-        for i in range(7):
-            day = schedule_data[list(schedule_data.keys())[i + 1]][idx]  # Get the corresponding day's shift
-            row.append(day if day != "N/A" else "")
+        for day in ["Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Monday", "Tuesday"]:
+            shift = schedule_data[day][idx]  # Get the corresponding day's shift
+            row.append(shift if shift != "N/A" else "")
         data.append(row)
 
     # Create a PDF in memory with landscape orientation
@@ -267,7 +226,7 @@ def download_pdf():
     ])
 
     table.setStyle(style)
- 
+
     # Build the PDF
     doc.build([table])
 
@@ -276,7 +235,7 @@ def download_pdf():
     response = make_response(buffer.read())
     response.headers['Content-Type'] = 'application/pdf'
     response.headers['Content-Disposition'] = 'attachment; filename=schedule.pdf'
-    
+
     return response
 
 if __name__ == "__main__":
